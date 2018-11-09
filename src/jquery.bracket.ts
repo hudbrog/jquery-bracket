@@ -263,13 +263,16 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
     this.name = "EndOfBranchException";
   }
 
-  class MatchResult<TTeam, TScore> {
+  class MatchResult<TTeam, TScore> {    
     private static teamsInResultOrder<TTeam, TScore>(
       match: MatchResult<TTeam, TScore>
     ) {
       const aBye = match.a.name.isEmpty();
       const bBye = match.b.name.isEmpty();
-
+      const endOfBranch = () => {
+        throw new EndOfBranchException();
+      };
+  
       if (bBye && !aBye) {
         if (match.b.emptyBranch() === BranchType.BYE) {
           return [match.a, match.b];
@@ -287,6 +290,22 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
           return [match.a, match.b];
         } else if (match.a.score.get() < match.b.score.get()) {
           return [match.b, match.a];
+        } else if (match.ext.scoreToString(match.a.score.get()) === 'TP' && match.ext.scoreToString(match.b.score.get()) === 'TP') {
+          const teamA = new TeamBlock<TTeam, TScore>(
+            endOfBranch,
+            Option.empty(),
+            Option.empty(),
+            Option.empty(),
+            Option.empty<TScore>()
+          );
+          const teamB = new TeamBlock<TTeam, TScore>(
+            endOfBranch,
+            Option.empty(),
+            Option.empty(),
+            Option.empty(),
+            Option.empty<TScore>()
+          );
+          return [teamA, teamB];
         }
       }
       return [];
@@ -311,13 +330,14 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
 
     constructor(
       readonly a: TeamBlock<TTeam, TScore>,
-      readonly b: TeamBlock<TTeam, TScore>
+      readonly b: TeamBlock<TTeam, TScore>,
+      readonly ext: Extension<TScore>
     ) {
       return;
     }
 
     public winner(): TeamBlock<TTeam, TScore> {
-      return (
+      return (        
         MatchResult.teamsInResultOrder(this)[0] ||
         MatchResult.emptyTeam(this.a.source, this.b)
       );
@@ -598,6 +618,7 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
       for (let m = 0; m < matchCount; m += 1) {
         const teamCb =
           r === 0 ? winnerMatchSources<TTeam, TScore>(teams, m) : null;
+          console.log(teamCb);
         if (
           !(r === roundCount - 1 && isSingleElimination) &&
           !(r === roundCount - 1 && skipGrandFinalComeback)
@@ -1085,7 +1106,8 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
 
       const matchResult: MatchResult<TTeam, TScore> = new MatchResult(
         teamABlock,
-        teamBBlock
+        teamBBlock,
+        this.opts.extension
       );
       const match = this.mkMatch(
         this,
@@ -2249,7 +2271,7 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
         {
           evaluateScore: defaultEvaluateScore,
           scoreToString: (score: number | null) =>
-            score === null ? "--" : score.toString()
+            score === null ? "--" : (score.toString() === '-1' ? "TP" : score.toString())
         }
       );
     } else {
