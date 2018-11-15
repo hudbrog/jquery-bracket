@@ -617,8 +617,7 @@ interface BracketOptions<TTeam, TScore, TMData, TUData> {
 
       for (let m = 0; m < matchCount; m += 1) {
         const teamCb =
-          r === 0 ? winnerMatchSources<TTeam, TScore>(teams, m) : null;
-          console.log(teamCb);
+          r === 0 ? winnerMatchSources<TTeam, TScore>(teams, m) : null;  
         if (
           !(r === roundCount - 1 && isSingleElimination) &&
           !(r === roundCount - 1 && skipGrandFinalComeback)
